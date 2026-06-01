@@ -7,7 +7,7 @@ created: 2026-06-01T00:00:00Z
 ---
 # Silent preflight with failure diagnostics
 
-Run dry-run/preflight internally for every `/move <target>`, but only print the detailed plan when blocked or confirmation is required.
+Run dry-run/preflight internally for every `/repo-move <target>`, but only print the detailed plan when blocked or confirmation is required.
 
 ## Acceptance Criteria
 

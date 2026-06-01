@@ -5,9 +5,9 @@ type: task
 priority: 1
 created: 2026-06-01T00:00:00Z
 ---
-# Bootstrap pi-move
+# Bootstrap pi-repo-move
 
-Create the `pi-move` repo, package scaffold, Pi extension entrypoint, docs, jj/git initialization, and initial tickets.
+Create the `pi-repo-move` repo, package scaffold, Pi extension entrypoint, docs, jj/git initialization, and initial tickets.
 
 ## Closure
 

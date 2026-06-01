@@ -11,7 +11,7 @@ tags: [session-bucket, mtime, resume]
 ---
 # Copy bucket sessions in source mtime order
 
-`/move` currently copies non-current source bucket sessions in lexicographic path order, with the current live session forced last. Source mtime is a better proxy for original session recency and makes the target bucket chronology closer to the source bucket.
+`/repo-move` currently copies non-current source bucket sessions in lexicographic path order, with the current live session forced last. Source mtime is a better proxy for original session recency and makes the target bucket chronology closer to the source bucket.
 
 ## Design
 

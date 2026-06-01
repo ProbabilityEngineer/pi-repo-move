@@ -5,13 +5,13 @@ type: feature
 priority: 1
 created: 2026-06-01T00:00:00Z
 ---
-# Implement /move <target>
+# Implement /repo-move <target>
 
 Move the current repo directory to a target path and relocate its Pi session bucket.
 
 ## Acceptance Criteria
 
-- `/move <target>` resolves the current repo root as source.
+- `/repo-move <target>` resolves the current repo root as source.
 - Leading `~` target paths expand to the user's home directory.
 - Dragged/quoted paths normalize safely.
 - Hard blockers stop before mutation and print diagnostics.
@@ -27,4 +27,4 @@ pi -c
 
 ## Closure
 
-Implemented `/move <target>` for the current repo root with target normalization, hard-blocker preflight, dirty jj/git confirmation, repo directory rename, Pi session relocation, relocation manifest append, and compact success output.
+Implemented `/repo-move <target>` for the current repo root with target normalization, hard-blocker preflight, dirty jj/git confirmation, repo directory rename, Pi session relocation, relocation manifest append, and compact success output.

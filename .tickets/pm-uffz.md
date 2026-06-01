@@ -7,11 +7,11 @@ created: 2026-06-01T19:16:30Z
 type: bug
 priority: 1
 assignee: ProbabilityEngineer
-tags: [pi-move, resume, current-session, session-bucket]
+tags: [pi-repo-move, resume, current-session, session-bucket]
 ---
 # Relocate current session last during bucket repo moves
 
-After /move started relocating every session in the source cwd bucket, `pi -c` in the target repo may resume an arbitrary/newest copied bucket session instead of the live current session. The batch copy writes many sessions into the target bucket with fresh mtimes/timestamps, so Pi's resume selection can choose a non-current session copied after the live one.
+After /repo-move started relocating every session in the source cwd bucket, `pi -c` in the target repo may resume an arbitrary/newest copied bucket session instead of the live current session. The batch copy writes many sessions into the target bucket with fresh mtimes/timestamps, so Pi's resume selection can choose a non-current session copied after the live one.
 
 ## Design
 
@@ -19,7 +19,7 @@ Keep bucket-wide relocation, but order the relocation batch so the current live 
 
 ## Acceptance Criteria
 
-- /move still relocates all source bucket JSONLs.
+- /repo-move still relocates all source bucket JSONLs.
 - The current live session is relocated after all non-current bucket sessions.
 - Success restart guidance `cd '<target>'; pi -c` resumes the moved live session rather than an older/arbitrary bucket session.
 - Per-session failure reporting still works.

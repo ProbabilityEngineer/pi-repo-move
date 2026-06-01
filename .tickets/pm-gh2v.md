@@ -11,7 +11,7 @@ tags: [resume, pi-c, session-bucket]
 ---
 # Keep pi -c deterministic after repo move
 
-After /move relocates all bucket sessions, compact restart guidance should still make `pi -c` resume the intended current live session without exposing long `--session` paths.
+After /repo-move relocates all bucket sessions, compact restart guidance should still make `pi -c` resume the intended current live session without exposing long `--session` paths.
 
 ## Design
 
@@ -19,7 +19,7 @@ Ensure the current live relocated session is the latest/default candidate in the
 
 ## Acceptance Criteria
 
-- /move relocates all source bucket sessions.
+- /repo-move relocates all source bucket sessions.
 - `cd '<target>'; pi -c` resumes the current live session.
 - No long session file path is printed in normal success output.
 - npm run lint passes.

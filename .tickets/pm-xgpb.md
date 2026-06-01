@@ -19,7 +19,7 @@ Generate bounded relocated filenames by keeping only the original base before an
 
 ## Acceptance Criteria
 
-- New pi-move relocated session filenames do not include relocated timestamps.
+- New pi-repo-move relocated session filenames do not include relocated timestamps.
 - Filename length remains bounded across repeated relocations.
 - Manifest records still contain event timestamps.
 - npm run lint passes.
