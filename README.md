@@ -2,17 +2,17 @@
 
 Pi extension for moving the current repo directory and relocating its Pi session bucket.
 
-Planned command:
+Command:
 
 ```text
 /move <target>
 ```
 
-Behavior goal:
+Behavior:
 
 - source is the current repo root/current cwd repo
 - target is the new repo path
-- preflight runs silently
+- preflight runs silently before mutation
 - hard blockers print diagnostics and stop without changes
 - dirty jj/git working copies ask for confirmation
 - successful moves print only the new path and restart command:
@@ -23,3 +23,17 @@ pi -c
 ```
 
 `pi-move` owns filesystem repo moves. Session-only relocation remains separate.
+
+## Hard blockers
+
+`/move <target>` stops before mutation when:
+
+- target already exists
+- target equals source
+- target is inside source
+- source is inside target
+- source repo root cannot be found
+- target parent cannot be created or written
+- current Pi session file is missing
+
+If the jj or git working copy is dirty, `/move` asks whether to continue instead of blocking.

@@ -1,6 +1,6 @@
 ---
 id: pm-move-current-repo
-status: open
+status: closed
 type: feature
 priority: 1
 created: 2026-06-01T00:00:00Z
@@ -23,3 +23,8 @@ Move the current repo directory to a target path and relocate its Pi session buc
 cd '<target>'
 pi -c
 ```
+
+
+## Closure
+
+Implemented `/move <target>` for the current repo root with target normalization, hard-blocker preflight, dirty jj/git confirmation, repo directory rename, Pi session relocation, relocation manifest append, and compact success output.

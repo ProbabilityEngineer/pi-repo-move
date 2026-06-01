@@ -1,6 +1,6 @@
 ---
 id: pm-docs-boundary
-status: open
+status: closed
 type: task
 priority: 2
 created: 2026-06-01T00:00:00Z
@@ -15,3 +15,8 @@ Document that `pi-move` owns filesystem repo moves, while session-only relocatio
 - README states source is current repo root.
 - README distinguishes filesystem repo move from session-only relocation.
 - README documents dirty-state confirmation and hard blockers.
+
+
+## Closure
+
+Updated README with `/move <target>` semantics, current repo root source, hard blockers, dirty-state confirmation, and the boundary that pi-move owns filesystem repo moves while session-only relocation remains separate.
