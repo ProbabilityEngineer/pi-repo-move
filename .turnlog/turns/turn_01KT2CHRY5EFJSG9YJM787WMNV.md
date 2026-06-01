@@ -1,0 +1,29 @@
+# Turn turn_01KT2CHRY5EFJSG9YJM787WMNV
+
+Session: sess_01KT29FJ94K8083W1MJSXZ183P  
+Model: unknown  
+Summary: Updated pi-move bucket relocation order. Added ticket pm-qurw and changed orderedBucketSessions to stat deduped source bucket session files, sort non-current sessions by source mtime ascending with path as tie-breaker, and still force the current live session last for deterministic `pi -c` resume. Validated with npm run lint, committed/pushed 8caaae9 'Copy repo move sessions by mtime', and verified clean jj/git state.  
+Created: 2026-06-01T20:03:38.565737Z
+
+## Verification
+
+- none
+
+## Attachments
+
+- none
+
+## VCS
+
+```json
+{
+  "kind": "jj",
+  "jj_change": "uvmopszzozzt",
+  "jj_commit": "724eb6d21fd2",
+  "jj_operation": "580dbbc4b6bc",
+  "git_head": "8caaae99b6f17f0bfa90d8bf90eb9a975bc907c1",
+  "git_branch": "main",
+  "dirty": false,
+  "changed_files": []
+}
+```

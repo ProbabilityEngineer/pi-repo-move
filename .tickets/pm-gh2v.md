@@ -1,6 +1,6 @@
 ---
 id: pm-gh2v
-status: open
+status: closed
 deps: []
 links: []
 created: 2026-06-01T19:47:55Z
