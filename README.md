@@ -1,6 +1,6 @@
 # pi-repo-move
 
-Move the current repo and relocate its Pi session bucket safely.
+Move the current repo and keep its Pi session history connected.
 
 `pi-repo-move` gives Pi a guarded `/repo-move` command for moving the active repository directory while preserving session continuity. It performs preflight checks before mutation, blocks unsafe path relationships, detects dirty jj/git working copies, moves the repository, records relocation evidence, and prints the exact restart command.
 

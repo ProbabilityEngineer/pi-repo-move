@@ -1,7 +1,7 @@
 {
   "name": "pi-repo-move",
   "version": "0.1.0",
-  "description": "Move the current repo and relocate its Pi session bucket safely.",
+  "description": "Move the current repo and keep its Pi session history connected.",
   "type": "module",
   "main": "index.ts",
   "types": "index.ts",
