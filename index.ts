@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -14,7 +14,7 @@ type CommandCtx = {
 	sessionManager?: { getSessionFile?: () => string | undefined; getSessionId?: () => string | undefined; getSessionName?: () => string | undefined; getDisplayName?: () => string | undefined };
 };
 
-type Preflight = { source: string; target: string; sessionFile?: string; dirty: string[]; blockers: string[] };
+type Preflight = { source: string; target: string; sessionFile?: string; bucketSessions: string[]; dirty: string[]; blockers: string[] };
 type RelocationRecord = {
 	ts: string;
 	fromCwd: string;
@@ -137,7 +137,8 @@ function parseSessionId(path: string): string | undefined {
 function uniqueRelocatedName(sourceFile: string): string {
 	const base = basename(sourceFile).replace(/\.jsonl$/i, "").split("_relocated_")[0]?.slice(0, 96) || "session";
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-	return `${base}_relocated_${stamp}.jsonl`;
+	const sourceHash = createHash("sha256").update(sourceFile).digest("hex").slice(0, 8);
+	return `${base}_relocated_${stamp}_${sourceHash}.jsonl`;
 }
 
 function replaceAllLiteral(input: string, from: string, to: string): string {
@@ -153,7 +154,16 @@ async function appendManifest(record: RelocationRecord): Promise<void> {
 	await writeFile(manifestFile(), `${JSON.stringify(record)}\n`, { encoding: "utf8", flag: "a" });
 }
 
-async function relocateCurrentSession(sessionFile: string, source: string, target: string): Promise<RelocationRecord> {
+async function sessionFilesInBucket(cwd: string): Promise<string[]> {
+	const bucketDir = join(agentDir(), "sessions", sessionBucketName(cwd));
+	const entries = await readdir(bucketDir, { withFileTypes: true }).catch(() => []);
+	return entries
+		.filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
+		.map((entry) => join(bucketDir, entry.name))
+		.sort((a, b) => a.localeCompare(b));
+}
+
+async function relocateSessionFile(sessionFile: string, source: string, target: string): Promise<RelocationRecord> {
 	const original = await readFile(sessionFile, "utf8");
 	let relocated = replaceAllLiteral(original, source, target);
 	relocated = replaceAllLiteral(relocated, source.replace(/\//g, "\\/"), target.replace(/\//g, "\\/"));
@@ -188,7 +198,7 @@ async function relocateCurrentSession(sessionFile: string, source: string, targe
 async function preflight(targetArg: string, ctx: CommandCtx): Promise<Preflight> {
 	const blockers: string[] = [];
 	const source = await findRepoRoot(ctx.cwd);
-	if (!source) return { source: ctx.cwd, target: targetArg, blockers: ["source repo root could not be found from current cwd"], dirty: [] };
+	if (!source) return { source: ctx.cwd, target: targetArg, blockers: ["source repo root could not be found from current cwd"], bucketSessions: [], dirty: [] };
 	let target = "";
 	try { target = normalizeTargetArg(targetArg, ctx.cwd); } catch (error) { blockers.push(error instanceof Error ? error.message : String(error)); }
 	if (target) {
@@ -204,7 +214,9 @@ async function preflight(targetArg: string, ctx: CommandCtx): Promise<Preflight>
 	const sessionFile = ctx.sessionManager?.getSessionFile?.();
 	if (!sessionFile) blockers.push("current Pi session has no session file");
 	else if (!(await exists(sessionFile))) blockers.push(`current session file is missing: ${sessionFile}`);
-	return { source, target, sessionFile, blockers, dirty: blockers.length ? [] : await vcsDirty(source) };
+	const bucketSessions = source ? await sessionFilesInBucket(source) : [];
+	if (sessionFile && !bucketSessions.includes(sessionFile)) bucketSessions.push(sessionFile);
+	return { source, target, sessionFile, bucketSessions: bucketSessions.sort((a, b) => a.localeCompare(b)), blockers, dirty: blockers.length ? [] : await vcsDirty(source) };
 }
 
 function blockedMessage(plan: Preflight): string {
@@ -248,12 +260,41 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 	try {
 		await mkdir(dirname(plan.target), { recursive: true });
 		await rename(plan.source, plan.target);
-		await relocateCurrentSession(plan.sessionFile!, plan.source, plan.target);
-		return compactSuccess(plan.target);
 	} catch (error) {
 		ctx.ui.notify(["Move failed", "", `from: ${plan.source}`, `to:   ${plan.target}`, "", error instanceof Error ? error.message : String(error)].join("\n"), "error");
 		return;
 	}
+
+	const failures: string[] = [];
+	let relocated = 0;
+	for (const sessionFile of plan.bucketSessions) {
+		try {
+			await relocateSessionFile(sessionFile, plan.source, plan.target);
+			relocated++;
+		} catch (error) {
+			failures.push(`${shortPath(sessionFile)}: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	if (failures.length) {
+		ctx.ui.notify([
+			"Repo moved, but some sessions failed to relocate",
+			"",
+			`from: ${plan.source}`,
+			`to:   ${plan.target}`,
+			`sessions relocated: ${relocated}/${plan.bucketSessions.length}`,
+			"",
+			"Failures:",
+			...failures.slice(0, 10).map((failure) => `- ${failure}`),
+			...(failures.length > 10 ? [`- ... ${failures.length - 10} more`] : []),
+			"",
+			"Run:",
+			`cd ${shellQuote(plan.target)}`,
+			"pi -c",
+		].join("\n"), "warning");
+		return;
+	}
+	return compactSuccess(plan.target);
 }
 
 export default function (pi: ExtensionAPI) {
