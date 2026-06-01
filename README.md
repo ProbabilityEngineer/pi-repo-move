@@ -5,7 +5,7 @@ Pi extension for moving the current repo directory and relocating its Pi session
 Command:
 
 ```text
-/move <target>
+/move-repo <target>
 ```
 
 Behavior:
@@ -37,7 +37,7 @@ Move records append normal relocation evidence plus first-class repo-move fields
 
 ## Hard blockers
 
-`/move <target>` stops before mutation when:
+`/move-repo <target>` stops before mutation when:
 
 - target already exists
 - target equals source
@@ -47,4 +47,4 @@ Move records append normal relocation evidence plus first-class repo-move fields
 - target parent cannot be created or written
 - current Pi session file is missing
 
-If the jj or git working copy is dirty, `/move` asks whether to continue instead of blocking.
+If the jj or git working copy is dirty, `/move-repo` asks whether to continue instead of blocking.

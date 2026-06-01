@@ -1,0 +1,29 @@
+# Turn turn_01KT2EEHFBHXYQZ6T2G6VQ2AVY
+
+Session: sess_01KT29FJ94K8083W1MJSXZ183P  
+Model: unknown  
+Summary: Renamed pi-move package/repo-facing metadata to pi-move-repo for publishing clarity while preserving the `/move <target>` command. Updated README, package.json, package-lock.json, manifest tool field, canonical store provenance/source strings, and source id. Filed/closed pm-mnw1, validated with npm run lint, committed/pushed b8056a7 'Rename package to pi-move-repo', and verified clean jj/git state.  
+Created: 2026-06-01T20:36:49.771541Z
+
+## Verification
+
+- none
+
+## Attachments
+
+- none
+
+## VCS
+
+```json
+{
+  "kind": "jj",
+  "jj_change": "knymvzplotqv",
+  "jj_commit": "00b8804e28fd",
+  "jj_operation": "1db82565dbf6",
+  "git_head": "b8056a73fa8ee367046e81533a9c95fefd6196d7",
+  "git_branch": "main",
+  "dirty": false,
+  "changed_files": []
+}
+```

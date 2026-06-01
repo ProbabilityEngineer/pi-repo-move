@@ -382,12 +382,12 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 }
 
 export default function (pi: ExtensionAPI) {
-	pi.registerCommand("move", {
-		description: "Move the current repo and relocate its Pi session bucket: /move <target>",
+	pi.registerCommand("move-repo", {
+		description: "Move the current repo and relocate its Pi session bucket: /move-repo <target>",
 		handler: async (args, ctx) => {
 			const words = parseWords(args);
 			const target = words.join(" ").trim();
-			if (!target) return ctx.ui.notify("Usage: /move <target>", "error");
+			if (!target) return ctx.ui.notify("Usage: /move-repo <target>", "error");
 			const result = await performMove(target, ctx as CommandCtx);
 			if (result) ctx.ui.notify(result, "info");
 		},
