@@ -228,14 +228,21 @@ async function sessionFilesInBucket(cwd: string): Promise<string[]> {
 		.sort((a, b) => a.localeCompare(b));
 }
 
-function orderedBucketSessions(bucketSessions: string[], currentSession?: string): string[] {
+async function orderedBucketSessions(bucketSessions: string[], currentSession?: string): Promise<string[]> {
 	const deduped = [...new Set(bucketSessions.map((session) => resolve(session)))];
-	if (!currentSession) return deduped.sort((a, b) => a.localeCompare(b));
-	const current = resolve(currentSession);
+	const mtimes = new Map<string, number>();
+	await Promise.all(deduped.map(async (session) => {
+		const st = await stat(session).catch(() => undefined);
+		mtimes.set(session, st?.mtimeMs ?? 0);
+	}));
+	const current = currentSession ? resolve(currentSession) : undefined;
 	return deduped.sort((a, b) => {
-		if (a === current) return 1;
-		if (b === current) return -1;
-		return a.localeCompare(b);
+		if (current) {
+			if (a === current) return 1;
+			if (b === current) return -1;
+		}
+		const byMtime = (mtimes.get(a) ?? 0) - (mtimes.get(b) ?? 0);
+		return byMtime || a.localeCompare(b);
 	});
 }
 
@@ -293,7 +300,7 @@ async function preflight(targetArg: string, ctx: CommandCtx): Promise<Preflight>
 	else if (!(await exists(sessionFile))) blockers.push(`current session file is missing: ${sessionFile}`);
 	const bucketSessions = source ? await sessionFilesInBucket(source) : [];
 	if (sessionFile) bucketSessions.push(sessionFile);
-	return { source, target, sessionFile, bucketSessions: orderedBucketSessions(bucketSessions, sessionFile), blockers, dirty: blockers.length ? [] : await vcsDirty(source) };
+	return { source, target, sessionFile, bucketSessions: await orderedBucketSessions(bucketSessions, sessionFile), blockers, dirty: blockers.length ? [] : await vcsDirty(source) };
 }
 
 function blockedMessage(plan: Preflight): string {
