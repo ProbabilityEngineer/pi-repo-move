@@ -146,7 +146,7 @@ function replaceAllLiteral(input: string, from: string, to: string): string {
 }
 
 function manifestFile(): string {
-	return join(agentDir(), "relocations.jsonl");
+	return join(agentDir(), "session-move", "manifests", "relocations.jsonl");
 }
 
 function storeFile(): string {

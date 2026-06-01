@@ -46,7 +46,13 @@ cd '<target>'
 pi -c
 ```
 
-Move records append normal relocation evidence plus first-class repo-move fields:
+Move records append normal relocation evidence to the shared session-move manifest:
+
+```text
+~/.pi/agent/session-move/manifests/relocations.jsonl
+```
+
+Legacy top-level manifests remain readable by downstream tools but are not rewritten. Records include first-class repo-move fields:
 
 ```json
 {
