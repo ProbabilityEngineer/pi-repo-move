@@ -1,0 +1,29 @@
+# Turn turn_01KT2BQZ52XH59EZTJKNFPH26X
+
+Session: sess_01KT29FJ94K8083W1MJSXZ183P  
+Model: unknown  
+Summary: Bound relocated session filenames in pi-move and pi-relocate to avoid unbounded `_relocated_<timestamp>` filename growth. pi-move now uses the original base before any `_relocated_`, truncated to 80 chars, plus a 12-char source hash. pi-relocate now uses the original base before any `_relocated_`, truncated to 80 chars, plus a 12-char hash suffix. Event timestamps remain in append-only relocation manifest records. Filed deterministic `pi -c` resume tickets for both repos (pi-move pm-gh2v, pi-relocate pr-na90), filed/closed bounded filename tickets (pi-move pm-xgpb, pi-relocate pr-4amn), validated with npm run lint / npx tsc --noEmit, pushed pi-move 919dc8c and pi-relocate bc8d8f1, both clean with @ empty and @- main/main@origin.  
+Created: 2026-06-01T19:49:32.962297Z
+
+## Verification
+
+- none
+
+## Attachments
+
+- none
+
+## VCS
+
+```json
+{
+  "kind": "jj",
+  "jj_change": "ksnpztvlwksr",
+  "jj_commit": "fd0f91df22ef",
+  "jj_operation": "926dc5d32b7c",
+  "git_head": "919dc8cd635c9630f1864cfb652c33701b44570e",
+  "git_branch": "main",
+  "dirty": false,
+  "changed_files": []
+}
+```

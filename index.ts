@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 
@@ -148,9 +149,74 @@ function manifestFile(): string {
 	return join(agentDir(), "relocations.jsonl");
 }
 
+function storeFile(): string {
+	return join(agentDir(), "session-store", "session-store.sqlite");
+}
+
+function hashId(prefix: string, ...parts: (string | undefined)[]) {
+	return `${prefix}_${parts.filter(Boolean).join("\u0000").replace(/[^a-zA-Z0-9]+/g, "_").slice(0, 48)}_${Math.abs(parts.join("\u0000").split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0)).toString(16)}`;
+}
+
+function sessionFileId(path: string) {
+	return hashId("session", path);
+}
+
+function observationId(path: string) {
+	return hashId("obs", path);
+}
+
+function initStore(db: DatabaseSync) {
+	db.exec(`
+CREATE TABLE IF NOT EXISTS sources (id TEXT PRIMARY KEY, provider TEXT NOT NULL, kind TEXT NOT NULL, uri TEXT NOT NULL, label TEXT, first_observed_at TEXT, last_observed_at TEXT, metadata_json TEXT NOT NULL DEFAULT '{}');
+CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, provider TEXT NOT NULL, provider_session_id TEXT, canonical_key TEXT NOT NULL UNIQUE, first_seen_at TEXT, last_seen_at TEXT, start_timestamp TEXT, end_timestamp TEXT, event_count INTEGER, line_count INTEGER, byte_count INTEGER, content_sha256 TEXT, prefix_sha256 TEXT, metadata_json TEXT NOT NULL DEFAULT '{}');
+CREATE TABLE IF NOT EXISTS session_observations (id TEXT PRIMARY KEY, session_id TEXT, source_id TEXT, path TEXT, provider_session_id TEXT, observed_at TEXT, snapshot_label TEXT, file_birthtime TEXT, file_mtime TEXT, file_size INTEGER, line_count INTEGER, first_event_at TEXT, last_event_at TEXT, content_sha256 TEXT, prefix_sha256 TEXT, metadata_json TEXT NOT NULL DEFAULT '{}');
+CREATE TABLE IF NOT EXISTS edges (id TEXT PRIMARY KEY, source_session_id TEXT, target_session_id TEXT, edge_type TEXT NOT NULL, timestamp TEXT, source_observation_id TEXT, target_observation_id TEXT, confidence TEXT NOT NULL, provenance TEXT NOT NULL, metadata_json TEXT NOT NULL DEFAULT '{}');
+CREATE TABLE IF NOT EXISTS observation_marks (id TEXT PRIMARY KEY, observation_id TEXT NOT NULL, mark_type TEXT NOT NULL, reason TEXT, replacement_observation_id TEXT, source TEXT NOT NULL, timestamp TEXT NOT NULL, confidence TEXT NOT NULL, manual_review_required INTEGER NOT NULL DEFAULT 1, metadata_json TEXT NOT NULL DEFAULT '{}');
+`);
+}
+
+async function sessionStats(path: string) {
+	try {
+		const [raw, st] = await Promise.all([readFile(path, "utf8"), stat(path)]);
+		const lines = raw.split("\n").filter((line) => line.trim());
+		return { lineCount: lines.length, byteCount: st.size, fileBirthtime: st.birthtime.toISOString(), fileMtime: st.mtime.toISOString() };
+	} catch {
+		return { lineCount: null, byteCount: null, fileBirthtime: null, fileMtime: null };
+	}
+}
+
 async function appendManifest(record: RelocationRecord): Promise<void> {
 	await mkdir(dirname(manifestFile()), { recursive: true });
 	await writeFile(manifestFile(), `${JSON.stringify(record)}\n`, { encoding: "utf8", flag: "a" });
+}
+
+async function appendStoreRecord(record: RelocationRecord): Promise<void> {
+	await mkdir(dirname(storeFile()), { recursive: true });
+	const db = new DatabaseSync(storeFile());
+	try {
+		initStore(db);
+		const sourceId = "source_pi_move_manifest";
+		db.prepare("INSERT OR IGNORE INTO sources VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(sourceId, "pi", "relocation_manifest", manifestFile(), "Pi move relocation manifest", null, null, "{}");
+		const upsertSession = db.prepare("INSERT OR REPLACE INTO sessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		const upsertObs = db.prepare("INSERT OR REPLACE INTO session_observations VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		const upsertEdge = db.prepare("INSERT OR REPLACE INTO edges VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		const upsertMark = db.prepare("INSERT OR REPLACE INTO observation_marks VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		const sourceSessionId = sessionFileId(record.sourceSession);
+		const destSessionId = sessionFileId(record.destinationSession);
+		const sourceObsId = observationId(record.sourceSession);
+		const destObsId = observationId(record.destinationSession);
+		const sourceStats = await sessionStats(record.sourceSession);
+		const destStats = await sessionStats(record.destinationSession);
+		upsertSession.run(sourceSessionId, "pi", record.sourceSessionId ?? null, record.sourceSession, null, record.ts, null, null, null, sourceStats.lineCount, sourceStats.byteCount, null, null, JSON.stringify({ cwd: record.fromCwd, repo: record.sourceRepo }));
+		upsertSession.run(destSessionId, "pi", record.destinationSessionId ?? null, record.destinationSession, record.ts, null, null, null, null, destStats.lineCount, destStats.byteCount, null, null, JSON.stringify({ cwd: record.toCwd, repo: record.targetRepo }));
+		upsertObs.run(sourceObsId, sourceSessionId, sourceId, record.sourceSession, record.sourceSessionId ?? null, record.ts, null, sourceStats.fileBirthtime, sourceStats.fileMtime, sourceStats.byteCount, sourceStats.lineCount, null, null, null, null, JSON.stringify({ cwd: record.fromCwd, repo: record.sourceRepo }));
+		upsertObs.run(destObsId, destSessionId, sourceId, record.destinationSession, record.destinationSessionId ?? null, record.ts, null, destStats.fileBirthtime, destStats.fileMtime, destStats.byteCount, destStats.lineCount, null, null, null, null, JSON.stringify({ cwd: record.toCwd, repo: record.targetRepo }));
+		upsertEdge.run(hashId("edge", record.ts, record.sourceSession, record.destinationSession), sourceSessionId, destSessionId, "repo_move", record.ts, sourceObsId, destObsId, "authoritative", "pi-move", JSON.stringify({ fromCwd: record.fromCwd, toCwd: record.toCwd, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo, replacements: record.replacements, parent: record.parent, sourceSessionId: record.sourceSessionId, destinationSessionId: record.destinationSessionId, mode: record.mode, operationType: record.operationType, tool: record.tool, sourceLinesAtEvent: record.sourceLinesAtEvent, sourceBytesAtEvent: record.sourceBytesAtEvent }));
+		upsertMark.run(hashId("mark", sourceObsId, "superseded", destObsId, record.ts), sourceObsId, "superseded", "repo moved by pi-move move semantics", destObsId, "pi-move", record.ts, "authoritative", 1, JSON.stringify({ operationType: record.operationType, tool: record.tool, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo }));
+		upsertMark.run(hashId("mark", sourceObsId, "deletion_candidate", destObsId, record.ts), sourceObsId, "deletion_candidate", "old repo-bucket copy after repo move; requires manual review before deletion", destObsId, "pi-move", record.ts, "authoritative", 1, JSON.stringify({ operationType: record.operationType, tool: record.tool, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo }));
+	} finally {
+		db.close();
+	}
 }
 
 async function sessionFilesInBucket(cwd: string): Promise<string[]> {
@@ -202,6 +268,7 @@ async function relocateSessionFile(sessionFile: string, source: string, target: 
 		sourceBytesAtEvent: Buffer.byteLength(original),
 	};
 	await appendManifest(record);
+	await appendStoreRecord(record);
 	return record;
 }
 
