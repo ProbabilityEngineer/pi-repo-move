@@ -135,10 +135,9 @@ function parseSessionId(path: string): string | undefined {
 }
 
 function uniqueRelocatedName(sourceFile: string): string {
-	const base = basename(sourceFile).replace(/\.jsonl$/i, "").split("_relocated_")[0]?.slice(0, 96) || "session";
-	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-	const sourceHash = createHash("sha256").update(sourceFile).digest("hex").slice(0, 8);
-	return `${base}_relocated_${stamp}_${sourceHash}.jsonl`;
+	const base = basename(sourceFile).replace(/\.jsonl$/i, "").split("_relocated_")[0]?.slice(0, 80) || "session";
+	const sourceHash = createHash("sha256").update(sourceFile).digest("hex").slice(0, 12);
+	return `${base}_relocated_${sourceHash}.jsonl`;
 }
 
 function replaceAllLiteral(input: string, from: string, to: string): string {
