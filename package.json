@@ -1,6 +1,6 @@
 {
   "name": "pi-repo-move",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Move the current repo and keep its Pi session history connected.",
   "type": "module",
   "main": "index.ts",
@@ -16,9 +16,22 @@
   "scripts": {
     "lint": "tsc --noEmit"
   },
-  "keywords": ["pi-package", "pi-extension", "pi", "repo", "move", "relocate", "session"],
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "pi",
+    "repo",
+    "move",
+    "relocate",
+    "session"
+  ],
   "license": "MIT",
-  "files": ["index.ts", "README.md", "LICENSE", "tsconfig.json"],
+  "files": [
+    "index.ts",
+    "README.md",
+    "LICENSE",
+    "tsconfig.json"
+  ],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
   },
@@ -28,6 +41,8 @@
     "typescript": "latest"
   },
   "pi": {
-    "extensions": ["./index.ts"]
+    "extensions": [
+      "./index.ts"
+    ]
   }
 }

@@ -213,7 +213,7 @@ async function appendStoreRecord(record: RelocationRecord): Promise<void> {
 		upsertObs.run(destObsId, destSessionId, sourceId, record.destinationSession, record.destinationSessionId ?? null, record.ts, null, destStats.fileBirthtime, destStats.fileMtime, destStats.byteCount, destStats.lineCount, null, null, null, null, JSON.stringify({ cwd: record.toCwd, repo: record.targetRepo }));
 		upsertEdge.run(hashId("edge", record.ts, record.sourceSession, record.destinationSession), sourceSessionId, destSessionId, "repo_move", record.ts, sourceObsId, destObsId, "authoritative", "pi-repo-move", JSON.stringify({ fromCwd: record.fromCwd, toCwd: record.toCwd, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo, replacements: record.replacements, parent: record.parent, sourceSessionId: record.sourceSessionId, destinationSessionId: record.destinationSessionId, mode: record.mode, operationType: record.operationType, tool: record.tool, sourceLinesAtEvent: record.sourceLinesAtEvent, sourceBytesAtEvent: record.sourceBytesAtEvent }));
 		upsertMark.run(hashId("mark", sourceObsId, "superseded", destObsId, record.ts), sourceObsId, "superseded", "repo moved by pi-repo-move move semantics", destObsId, "pi-repo-move", record.ts, "authoritative", 1, JSON.stringify({ operationType: record.operationType, tool: record.tool, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo }));
-		upsertMark.run(hashId("mark", sourceObsId, "deletion_candidate", destObsId, record.ts), sourceObsId, "deletion_candidate", "old repo-bucket copy after repo move; requires manual review before deletion", destObsId, "pi-repo-move", record.ts, "authoritative", 1, JSON.stringify({ operationType: record.operationType, tool: record.tool, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo }));
+		upsertMark.run(hashId("mark", sourceObsId, "deletion_candidate", destObsId, record.ts), sourceObsId, "deletion_candidate", "old session-directory copy after repo move; requires manual review before deletion", destObsId, "pi-repo-move", record.ts, "authoritative", 1, JSON.stringify({ operationType: record.operationType, tool: record.tool, sourceRepo: record.sourceRepo, targetRepo: record.targetRepo }));
 	} finally {
 		db.close();
 	}
@@ -383,7 +383,7 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 
 export default function (pi: ExtensionAPI) {
 	pi.registerCommand("repo-move", {
-		description: "Move the current repo and relocate its Pi session bucket: /repo-move <target>",
+		description: "Move the current repo and keep its Pi session history connected: /repo-move <target>",
 		handler: async (args, ctx) => {
 			const words = parseWords(args);
 			const target = words.join(" ").trim();
