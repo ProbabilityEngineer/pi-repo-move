@@ -163,6 +163,17 @@ async function sessionFilesInBucket(cwd: string): Promise<string[]> {
 		.sort((a, b) => a.localeCompare(b));
 }
 
+function orderedBucketSessions(bucketSessions: string[], currentSession?: string): string[] {
+	const deduped = [...new Set(bucketSessions.map((session) => resolve(session)))];
+	if (!currentSession) return deduped.sort((a, b) => a.localeCompare(b));
+	const current = resolve(currentSession);
+	return deduped.sort((a, b) => {
+		if (a === current) return 1;
+		if (b === current) return -1;
+		return a.localeCompare(b);
+	});
+}
+
 async function relocateSessionFile(sessionFile: string, source: string, target: string): Promise<RelocationRecord> {
 	const original = await readFile(sessionFile, "utf8");
 	let relocated = replaceAllLiteral(original, source, target);
@@ -215,8 +226,8 @@ async function preflight(targetArg: string, ctx: CommandCtx): Promise<Preflight>
 	if (!sessionFile) blockers.push("current Pi session has no session file");
 	else if (!(await exists(sessionFile))) blockers.push(`current session file is missing: ${sessionFile}`);
 	const bucketSessions = source ? await sessionFilesInBucket(source) : [];
-	if (sessionFile && !bucketSessions.includes(sessionFile)) bucketSessions.push(sessionFile);
-	return { source, target, sessionFile, bucketSessions: bucketSessions.sort((a, b) => a.localeCompare(b)), blockers, dirty: blockers.length ? [] : await vcsDirty(source) };
+	if (sessionFile) bucketSessions.push(sessionFile);
+	return { source, target, sessionFile, bucketSessions: orderedBucketSessions(bucketSessions, sessionFile), blockers, dirty: blockers.length ? [] : await vcsDirty(source) };
 }
 
 function blockedMessage(plan: Preflight): string {
