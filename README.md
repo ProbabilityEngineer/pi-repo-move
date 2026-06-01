@@ -1,8 +1,32 @@
 # pi-repo-move
 
-Pi extension for moving the current repo directory and relocating its Pi session bucket.
+Move the current repo and relocate its Pi session bucket safely.
 
-Command:
+`pi-repo-move` gives Pi a guarded `/repo-move` command for moving the active repository directory while preserving session continuity. It performs preflight checks before mutation, blocks unsafe path relationships, detects dirty jj/git working copies, moves the repository, records relocation evidence, and prints the exact restart command.
+
+It is intentionally narrow: `pi-repo-move` owns filesystem repo moves. Session-only relocation remains separate.
+
+## Install
+
+From npm:
+
+```bash
+pi install npm:pi-repo-move
+```
+
+From GitHub:
+
+```bash
+pi install git:github.com/ProbabilityEngineer/pi-repo-move
+```
+
+For project-local install, add `-l`:
+
+```bash
+pi install -l npm:pi-repo-move
+```
+
+## Command
 
 ```text
 /repo-move <target>
@@ -12,7 +36,7 @@ Behavior:
 
 - source is the current repo root/current cwd repo
 - target is the new repo path
-- preflight runs silently before mutation
+- preflight runs before mutation
 - hard blockers print diagnostics and stop without changes
 - dirty jj/git working copies ask for confirmation
 - successful moves print only the new path and restart command:
@@ -21,8 +45,6 @@ Behavior:
 cd '<target>'
 pi -c
 ```
-
-`pi-repo-move` owns filesystem repo moves. Session-only relocation remains separate.
 
 Move records append normal relocation evidence plus first-class repo-move fields:
 
@@ -48,3 +70,7 @@ Move records append normal relocation evidence plus first-class repo-move fields
 - current Pi session file is missing
 
 If the jj or git working copy is dirty, `/repo-move` asks whether to continue instead of blocking.
+
+## Prompt overhead
+
+`pi-repo-move` registers one focused slash command and does not inject dynamic repository status into prompts.

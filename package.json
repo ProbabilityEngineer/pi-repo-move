@@ -1,15 +1,24 @@
 {
   "name": "pi-repo-move",
   "version": "0.1.0",
-  "description": "Pi extension for moving the current repo and relocating its Pi session bucket",
+  "description": "Move the current repo and relocate its Pi session bucket safely.",
   "type": "module",
   "main": "index.ts",
   "types": "index.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ProbabilityEngineer/pi-repo-move.git"
+  },
+  "homepage": "https://github.com/ProbabilityEngineer/pi-repo-move#readme",
+  "bugs": {
+    "url": "https://github.com/ProbabilityEngineer/pi-repo-move/issues"
+  },
   "scripts": {
     "lint": "tsc --noEmit"
   },
-  "keywords": ["pi", "pi-extension", "move", "repo"],
+  "keywords": ["pi-package", "pi-extension", "pi", "repo", "move", "relocate", "session"],
   "license": "MIT",
+  "files": ["index.ts", "README.md", "LICENSE", "tsconfig.json"],
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.74.0"
   },
