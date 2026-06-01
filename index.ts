@@ -26,6 +26,10 @@ type RelocationRecord = {
 	sourceSessionId?: string;
 	destinationSessionId?: string;
 	mode: "move";
+	operationType: "repo_move";
+	tool: "pi-move";
+	sourceRepo: string;
+	targetRepo: string;
 	sourceLinesAtEvent?: number;
 	sourceBytesAtEvent?: number;
 };
@@ -170,6 +174,10 @@ async function relocateCurrentSession(sessionFile: string, source: string, targe
 		sourceSessionId: sessionId,
 		destinationSessionId: sessionId,
 		mode: "move",
+		operationType: "repo_move",
+		tool: "pi-move",
+		sourceRepo: source,
+		targetRepo: target,
 		sourceLinesAtEvent: original.split("\n").filter((line) => line.trim()).length,
 		sourceBytesAtEvent: Buffer.byteLength(original),
 	};

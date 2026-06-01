@@ -24,6 +24,17 @@ pi -c
 
 `pi-move` owns filesystem repo moves. Session-only relocation remains separate.
 
+Move records append normal relocation evidence plus first-class repo-move fields:
+
+```json
+{
+  "operationType": "repo_move",
+  "tool": "pi-move",
+  "sourceRepo": "/old/repo",
+  "targetRepo": "/new/repo"
+}
+```
+
 ## Hard blockers
 
 `/move <target>` stops before mutation when:
