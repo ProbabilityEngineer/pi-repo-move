@@ -1,5 +1,5 @@
 {
-  "name": "pi-move",
+  "name": "pi-move-repo",
   "version": "0.1.0",
   "description": "Pi extension for moving the current repo and relocating its Pi session bucket",
   "type": "module",

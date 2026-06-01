@@ -1,4 +1,4 @@
-# pi-move
+# pi-move-repo
 
 Pi extension for moving the current repo directory and relocating its Pi session bucket.
 
@@ -22,14 +22,14 @@ cd '<target>'
 pi -c
 ```
 
-`pi-move` owns filesystem repo moves. Session-only relocation remains separate.
+`pi-move-repo` owns filesystem repo moves. Session-only relocation remains separate.
 
 Move records append normal relocation evidence plus first-class repo-move fields:
 
 ```json
 {
   "operationType": "repo_move",
-  "tool": "pi-move",
+  "tool": "pi-move-repo",
   "sourceRepo": "/old/repo",
   "targetRepo": "/new/repo"
 }
