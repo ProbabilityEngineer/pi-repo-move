@@ -1,11 +1,11 @@
-# pi-move-repo
+# pi-repo-move
 
 Pi extension for moving the current repo directory and relocating its Pi session bucket.
 
 Command:
 
 ```text
-/move-repo <target>
+/repo-move <target>
 ```
 
 Behavior:
@@ -22,14 +22,14 @@ cd '<target>'
 pi -c
 ```
 
-`pi-move-repo` owns filesystem repo moves. Session-only relocation remains separate.
+`pi-repo-move` owns filesystem repo moves. Session-only relocation remains separate.
 
 Move records append normal relocation evidence plus first-class repo-move fields:
 
 ```json
 {
   "operationType": "repo_move",
-  "tool": "pi-move-repo",
+  "tool": "pi-repo-move",
   "sourceRepo": "/old/repo",
   "targetRepo": "/new/repo"
 }
@@ -37,7 +37,7 @@ Move records append normal relocation evidence plus first-class repo-move fields
 
 ## Hard blockers
 
-`/move-repo <target>` stops before mutation when:
+`/repo-move <target>` stops before mutation when:
 
 - target already exists
 - target equals source
@@ -47,4 +47,4 @@ Move records append normal relocation evidence plus first-class repo-move fields
 - target parent cannot be created or written
 - current Pi session file is missing
 
-If the jj or git working copy is dirty, `/move-repo` asks whether to continue instead of blocking.
+If the jj or git working copy is dirty, `/repo-move` asks whether to continue instead of blocking.
