@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -328,6 +328,16 @@ function compactSuccess(target: string): string {
 	].join("\n");
 }
 
+async function writeRestartScript(target: string, sessionFile: string): Promise<string> {
+	const dir = join(agentDir(), "repo-move", "restart-scripts");
+	await mkdir(dir, { recursive: true });
+	const script = join(dir, "latest.sh");
+	const content = ["#!/usr/bin/env bash", "set -euo pipefail", `cd ${shellQuote(target)}`, `exec pi --session ${shellQuote(sessionFile)}`, ""].join("\n");
+	await writeFile(script, content, "utf8");
+	await chmod(script, 0o755);
+	return script;
+}
+
 async function performMove(targetArg: string, ctx: CommandCtx): Promise<string | undefined> {
 	const plan = await preflight(targetArg, ctx);
 	if (plan.blockers.length) {
@@ -350,10 +360,12 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 	}
 
 	const failures: string[] = [];
+	const relocatedRecords: RelocationRecord[] = [];
 	let relocated = 0;
 	for (const sessionFile of plan.bucketSessions) {
 		try {
-			await relocateSessionFile(sessionFile, plan.source, plan.target);
+			const record = await relocateSessionFile(sessionFile, plan.source, plan.target);
+			relocatedRecords.push(record);
 			relocated++;
 		} catch (error) {
 			failures.push(`${shortPath(sessionFile)}: ${error instanceof Error ? error.message : String(error)}`);
@@ -377,6 +389,14 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 			"pi -c",
 		].join("\n"), "warning");
 		return;
+	}
+	const current = plan.sessionFile ? [...relocatedRecords].find((record) => record.parent === plan.sessionFile) : undefined;
+	if (current) {
+		const restart = await ctx.ui.confirm("Restart Pi in moved repository?", `The repository moved to:\n${plan.target}\n\nOpen Pi in the relocated session now?`);
+		if (restart) {
+			const script = await writeRestartScript(plan.target, current.destinationSession);
+			return `${compactSuccess(plan.target)}\n\nRestart script created:\n${script}`;
+		}
 	}
 	return compactSuccess(plan.target);
 }
