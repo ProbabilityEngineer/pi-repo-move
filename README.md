@@ -41,11 +41,11 @@ Behavior:
 - preflight runs before mutation
 - hard blockers print diagnostics and stop without changes
 - dirty Git working copies ask for confirmation
-- after a successful move, Pi asks whether to prepare a restart in the new location
-- accepting writes an executable timestamped script under `~/.pi/agent/repo-move/restart-scripts/` and updates `latest.sh`
+- after a successful move, Pi switches the live process into the exact relocated session in the target repository
+- it also writes an executable timestamped recovery script under `~/.pi/agent/repo-move/restart-scripts/` and updates `latest.sh`
 - the script changes to the target directory and resumes the exact relocated session with `exec pi --session ...`
 - if the current session has a meaningful display name, the script also restores it with `--name`
-- declining, or using the fallback manually, uses:
+- if live switching is unavailable or cancelled, use the restart script or fallback command:
 
 ```bash
 cd '<target>'

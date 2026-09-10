@@ -13,6 +13,7 @@ type CommandCtx = {
 	cwd: string;
 	ui: { notify: (message: string, level?: "info" | "warning" | "error") => void; confirm: (title: string, message: string) => Promise<boolean> };
 	sessionManager?: { getSessionFile?: () => string | undefined; getSessionId?: () => string | undefined; getSessionName?: () => string | undefined; getDisplayName?: () => string | undefined };
+	switchSession?: (sessionFile: string, options?: { withSession?: (ctx: CommandCtx) => Promise<void> }) => Promise<{ cancelled?: boolean } | undefined>;
 };
 
 type Preflight = { source: string; target: string; sessionFile?: string; bucketSessions: string[]; dirty: string[]; blockers: string[] };
@@ -418,19 +419,33 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 		return;
 	}
   const current = plan.sessionFile ? [...relocatedRecords].find((record) => record.parent === plan.sessionFile) : undefined;
-  if (current) {
-    // Make the compact `cd <target>; pi -c` fallback choose this relocated session.
-    await utimes(current.destinationSession, new Date(), new Date());
-    const restart = await ctx.ui.confirm(
-      "Restart Pi in moved repository?",
-      ["The repository moved to:", plan.target, "", "Open Pi in the relocated session now?"].join(String.fromCharCode(10)),
-    );
-    if (restart) {
-      const script = await writeRestartScripts(plan.target, current.destinationSession, current.destinationSessionId, sessionDisplayName(ctx));
-      return [compactSuccess(plan.target), "", "Restart script created:", script].join(String.fromCharCode(10));
-    }
+  if (!current) return compactSuccess(plan.target);
+
+  // Make the compact `cd <target>; pi -c` fallback choose this relocated session.
+  await utimes(current.destinationSession, new Date(), new Date());
+  const script = await writeRestartScripts(plan.target, current.destinationSession, current.destinationSessionId, sessionDisplayName(ctx));
+  const fallback = ["Restart script:", script, "", "Fallback:", `cd ${shellQuote(plan.target)}`, "pi -c"].join(String.fromCharCode(10));
+  if (!ctx.switchSession) {
+    return [compactSuccess(plan.target), "", "Live session switching is unavailable in this Pi version.", "", fallback].join(String.fromCharCode(10));
   }
-  return compactSuccess(plan.target);
+
+  ctx.ui.notify([`Moved → ${plan.target}`, "Switching live Pi session to the relocated copy."].join(String.fromCharCode(10)), "info");
+  const switchResult = await ctx.switchSession(current.destinationSession, {
+    withSession: async (nextCtx) => {
+      nextCtx.ui.notify([
+        "Moved repository session active",
+        "",
+        `Current cwd: ${plan.target}`,
+        `Session file: ${shortPath(current.destinationSession)}`,
+        "",
+        fallback,
+      ].join(String.fromCharCode(10)), "info");
+    },
+  });
+  if (switchResult?.cancelled) {
+    ctx.ui.notify(["Repository moved, but live session switch was cancelled.", "", fallback].join(String.fromCharCode(10)), "warning");
+  }
+  return undefined;
 }
 
 export default function (pi: ExtensionAPI) {
@@ -446,4 +461,4 @@ export default function (pi: ExtensionAPI) {
 	});
 }
 
-export { preflight, sessionBucketName, writeRestartScripts };
+export { performMove, preflight, sessionBucketName, writeRestartScripts };
