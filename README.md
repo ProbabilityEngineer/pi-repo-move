@@ -4,7 +4,7 @@
 
 Move the current repo and keep its Pi session history connected.
 
-`pi-repo-move` gives Pi a guarded `/repo-move` command for moving the active repository directory while preserving session continuity. It performs preflight checks before mutation, blocks unsafe path relationships, detects dirty jj/git working copies, moves the repository, records move evidence, and prints the exact restart command.
+`pi-repo-move` gives Pi a guarded `/repo-move` command for moving the active repository directory while preserving session continuity. It performs preflight checks before mutation, blocks unsafe path relationships, detects dirty Git working copies, moves the repository, records move evidence, and offers to create an exact-session restart script in the new location.
 
 It is intentionally narrow: `pi-repo-move` owns filesystem repo moves. Session-only moves remain separate.
 
@@ -40,12 +40,15 @@ Behavior:
 - target is the new repo path
 - preflight runs before mutation
 - hard blockers print diagnostics and stop without changes
-- dirty jj/git working copies ask for confirmation
-- successful moves print only the new path and restart command:
+- dirty Git working copies ask for confirmation
+- after a successful move, Pi asks whether to prepare a restart in the new location
+- accepting writes an executable script that changes to the target directory and resumes the exact relocated session
+- declining, or using the fallback manually, uses:
 
 ```bash
 cd '<target>'
 pi -c
+```
 ```
 
 Move records append normal move evidence to the shared session-move manifest:
