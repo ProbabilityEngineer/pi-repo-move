@@ -10,5 +10,9 @@ dist/
 .tickets/
 .turnlog/
 .jj/
+# Track portable clu configuration/templates; ignore mutable local state
 .clu/data.sqlite
+.clu/data.sqlite-wal
+.clu/data.sqlite-shm
+.clu/backups/
 .build/
