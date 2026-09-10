@@ -1,6 +1,6 @@
 {
   "name": "pi-repo-move",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Move the current repo and keep its Pi session history connected.",
   "type": "module",
   "main": "index.ts",
@@ -14,7 +14,8 @@
     "url": "https://github.com/ProbabilityEngineer/pi-repo-move/issues"
   },
   "scripts": {
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/**/*.test.ts"
   },
   "keywords": [
     "pi-package",

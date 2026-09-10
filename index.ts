@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
-import { access, chmod, mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
+import { createHash, randomBytes } from "node:crypto";
+import { access, chmod, mkdir, readFile, readdir, rename, stat, utimes, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -319,23 +319,50 @@ function blockedMessage(plan: Preflight): string {
 }
 
 function compactSuccess(target: string): string {
-	return [
-		`Moved → ${target}`,
-		"",
-		"Run:",
-		`cd ${shellQuote(target)}`,
-		"pi -c",
-	].join("\n");
+  return [
+    `Moved → ${target}`,
+    "",
+    "Run:",
+    `cd ${shellQuote(target)}`,
+    "pi -c",
+  ].join(String.fromCharCode(10));
 }
 
-async function writeRestartScript(target: string, sessionFile: string): Promise<string> {
-	const dir = join(agentDir(), "repo-move", "restart-scripts");
-	await mkdir(dir, { recursive: true });
-	const script = join(dir, "latest.sh");
-	const content = ["#!/usr/bin/env bash", "set -euo pipefail", `cd ${shellQuote(target)}`, `exec pi --session ${shellQuote(sessionFile)}`, ""].join("\n");
-	await writeFile(script, content, "utf8");
-	await chmod(script, 0o755);
-	return script;
+function usableSessionName(name: string | undefined): string | undefined {
+  const trimmed = name?.trim();
+  if (!trimmed) return undefined;
+  if (["new session", "untitled", "unnamed", "default"].includes(trimmed.toLowerCase())) return undefined;
+  return trimmed;
+}
+
+function sessionDisplayName(ctx: CommandCtx): string | undefined {
+  const manager = ctx.sessionManager;
+  return usableSessionName(manager?.getSessionName?.() ?? manager?.getDisplayName?.());
+}
+
+function scriptStamp(): string {
+  return `${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
+}
+
+async function writeRestartScripts(target: string, sessionFile: string, sessionId?: string, name?: string): Promise<string> {
+  const dir = join(agentDir(), "repo-move", "restart-scripts");
+  await mkdir(dir, { recursive: true });
+  const content = [
+    "#!/usr/bin/env bash",
+    "set -euo pipefail",
+    ...(sessionId ? [`# Pi session id: ${sessionId}`] : []),
+    "# Resume the exact relocated session after changing to the target repository.",
+    `cd ${shellQuote(target)}`,
+    `exec pi ${name ? `--name ${shellQuote(name)} ` : ""}--session ${shellQuote(sessionFile)}`,
+    "",
+  ].join(String.fromCharCode(10));
+  const historical = join(dir, `run-${scriptStamp()}.sh`);
+  await writeFile(historical, content, { encoding: "utf8", flag: "wx" });
+  await chmod(historical, 0o755);
+  const latest = join(dir, "latest.sh");
+  await writeFile(latest, content, "utf8");
+  await chmod(latest, 0o755);
+  return historical;
 }
 
 async function performMove(targetArg: string, ctx: CommandCtx): Promise<string | undefined> {
@@ -390,15 +417,20 @@ async function performMove(targetArg: string, ctx: CommandCtx): Promise<string |
 		].join("\n"), "warning");
 		return;
 	}
-	const current = plan.sessionFile ? [...relocatedRecords].find((record) => record.parent === plan.sessionFile) : undefined;
-	if (current) {
-		const restart = await ctx.ui.confirm("Restart Pi in moved repository?", `The repository moved to:\n${plan.target}\n\nOpen Pi in the relocated session now?`);
-		if (restart) {
-			const script = await writeRestartScript(plan.target, current.destinationSession);
-			return `${compactSuccess(plan.target)}\n\nRestart script created:\n${script}`;
-		}
-	}
-	return compactSuccess(plan.target);
+  const current = plan.sessionFile ? [...relocatedRecords].find((record) => record.parent === plan.sessionFile) : undefined;
+  if (current) {
+    // Make the compact `cd <target>; pi -c` fallback choose this relocated session.
+    await utimes(current.destinationSession, new Date(), new Date());
+    const restart = await ctx.ui.confirm(
+      "Restart Pi in moved repository?",
+      ["The repository moved to:", plan.target, "", "Open Pi in the relocated session now?"].join(String.fromCharCode(10)),
+    );
+    if (restart) {
+      const script = await writeRestartScripts(plan.target, current.destinationSession, current.destinationSessionId, sessionDisplayName(ctx));
+      return [compactSuccess(plan.target), "", "Restart script created:", script].join(String.fromCharCode(10));
+    }
+  }
+  return compactSuccess(plan.target);
 }
 
 export default function (pi: ExtensionAPI) {
@@ -414,4 +446,4 @@ export default function (pi: ExtensionAPI) {
 	});
 }
 
-export { preflight, sessionBucketName };
+export { preflight, sessionBucketName, writeRestartScripts };

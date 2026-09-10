@@ -42,14 +42,17 @@ Behavior:
 - hard blockers print diagnostics and stop without changes
 - dirty Git working copies ask for confirmation
 - after a successful move, Pi asks whether to prepare a restart in the new location
-- accepting writes an executable script that changes to the target directory and resumes the exact relocated session
+- accepting writes an executable timestamped script under `~/.pi/agent/repo-move/restart-scripts/` and updates `latest.sh`
+- the script changes to the target directory and resumes the exact relocated session with `exec pi --session ...`
+- if the current session has a meaningful display name, the script also restores it with `--name`
 - declining, or using the fallback manually, uses:
 
 ```bash
 cd '<target>'
 pi -c
 ```
-```
+
+The current relocated session is touched before restart guidance is shown, so the `pi -c` fallback selects it from the target cwd bucket. Timestamped scripts are retained for recovery; `latest.sh` always points to the newest one.
 
 Move records append normal move evidence to the shared session-move manifest:
 
