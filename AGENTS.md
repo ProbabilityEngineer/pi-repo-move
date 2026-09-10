@@ -1,22 +1,16 @@
 # Agent Instructions
 
-## Workflow
+## Repository
 
-- Use semantic/structural tools before raw text search when changing code.
-- Use LSP first for known symbols, definitions, references, diagnostics, hover/type info, and callsite tracing.
-- Use AST search first for syntax/code-shape questions.
-- Use Semble for behavior/concept discovery.
-- Use grep/rg for exact literals, verification, and fallback.
+- `pi-repo-move` is a TypeScript Pi extension for moving the current repository while keeping its Pi session history connected.
+- Keep path migration explicit and preserve session continuity and canonical path handling.
+- The extension entry point is `index.ts`.
 
-## Jujutsu and Git
+## Validation
 
-- Use jj for local VCS operations.
-- Use Git only for remote interoperability.
-- Do not use Git staged-index workflows.
-- Before starting, inspect `jj status`.
-- After completing coherent work, use the established jj finish flow.
+- Run `npm run lint` after implementation changes.
+- Test path/session behavior without deleting source repositories or history.
 
-## Turnlog
+## Version control
 
-- When you attempt to use turnlog for meaningful repository work and the target repo is not initialized, initialize it rather than abandoning the record.
-- Keep `.turnlog/` out of GitHub by default unless the repo explicitly opts into tracking it.
+- Use normal Git workflows. Inspect `git status` and the diff before committing or pushing.
